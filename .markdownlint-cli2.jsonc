@@ -1,0 +1,18 @@
+{
+  "config": {
+    "default": true,
+
+    // Documentation frequently contains intentionally long lines,
+    // especially URLs, code examples, and technical references.
+    "MD013": false,
+
+    // Allow headings such as "Advantages" and "Disadvantages"
+    // to repeat when they belong to different parent sections.
+    "MD024": {
+      "siblings_only": true,
+    },
+  },
+
+  // CLAUDE.md only imports AGENTS.md and is not conventional Markdown documentation.
+  "ignores": ["CLAUDE.md"],
+}
