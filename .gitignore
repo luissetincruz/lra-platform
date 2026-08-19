@@ -32,3 +32,6 @@ npm-debug.log*
 # Local tooling
 .cache/
 .tmp/
+
+# Generated OpenAPI documentation
+contracts/openapi/*.html
