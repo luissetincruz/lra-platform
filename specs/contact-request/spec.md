@@ -1344,7 +1344,7 @@ These questions must be resolved before implementation when the corresponding im
 
 ## Next Artifacts
 
-After this specification is reviewed and accepted, the next artifact is:
+The acceptance criteria for this capability are defined in:
 
 ```text
 specs/contact-request/acceptance-criteria.md

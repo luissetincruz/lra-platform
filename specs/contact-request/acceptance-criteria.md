@@ -660,7 +660,7 @@ And the originating client and session context are preserved.
 
 ### AC-040 — Do not generate analytics without consent
 
-**Related requirements:** FR-012, NFR-010
+**Related requirements:** FR-012
 
 Given analytics consent is `false`
 
