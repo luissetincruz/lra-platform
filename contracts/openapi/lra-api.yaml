@@ -1,0 +1,333 @@
+openapi: 3.1.0
+
+info:
+  title: LRA Software API
+  version: 0.1.0
+  description: |
+    Public HTTP API for capabilities provided by the LRA Software platform.
+
+    This document is the reference contract shared by API consumers and
+    implementations. Application implementations must conform to this contract.
+
+tags:
+  - name: Contact Requests
+    description: Public contact request operations.
+
+paths:
+  /v1/contact-requests:
+    post:
+      tags:
+        - Contact Requests
+      summary: Submit a contact request
+      description: |
+        Submits a contact request from the LRA Software public website.
+
+        A legitimate request is considered accepted after validation and
+        successful persistence. Notification and analytics processing may
+        continue asynchronously after the response is returned.
+
+        Some submissions may be accepted by the public interface without
+        creating a persisted contact request.
+      operationId: createContactRequest
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactRequestCreate'
+            examples:
+              withAnalyticsConsent:
+                summary: Valid request with analytics consent
+                value:
+                  name: Ana Silva
+                  email: ana.silva@example.com
+                  phone: '+5511999999999'
+                  company: Example Company
+                  service: custom-software
+                  message: Gostaria de conversar sobre um projeto.
+                  locale: pt-BR
+                  businessWebsite: ''
+                  privacy:
+                    accepted: true
+                    policyVersion: example-version
+                  analytics:
+                    consent: true
+                    clientId: '1234567890.1234567890'
+                    sessionId: '1724025600'
+
+              withoutAnalyticsConsent:
+                summary: Valid request without analytics consent
+                value:
+                  name: Ana Silva
+                  email: ana.silva@example.com
+                  phone: '+5511999999999'
+                  company: null
+                  service: custom-software
+                  message: Gostaria de conversar sobre um projeto.
+                  locale: pt-BR
+                  businessWebsite: ''
+                  privacy:
+                    accepted: true
+                    policyVersion: example-version
+                  analytics:
+                    consent: false
+                    clientId: null
+                    sessionId: null
+
+      responses:
+        '202':
+          description: |
+            Submission accepted by the public contact interface.
+
+            For legitimate submissions, the request has been validated and
+            persisted before this response is returned.
+
+            Some submissions may receive the same public response without
+            resulting in persistence.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedResponse'
+              example:
+                accepted: true
+
+        '400':
+          description: The request failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+        '429':
+          description: The request rate limit has been exceeded.
+          headers:
+            Retry-After:
+              description: Number of seconds before another request may be attempted.
+              required: true
+              schema:
+                type: integer
+                minimum: 1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitErrorResponse'
+
+        '500':
+          description: An unexpected internal error prevented request acceptance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalErrorResponse'
+
+components:
+  schemas:
+    ContactRequestCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - email
+        - phone
+        - company
+        - service
+        - message
+        - locale
+        - businessWebsite
+        - privacy
+        - analytics
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: Visitor name.
+
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+          description: Visitor contact email address.
+
+        phone:
+          type: string
+          pattern: '^\+[1-9][0-9]{1,14}$'
+          description: |
+            Visitor telephone number using canonical E.164 representation.
+
+        company:
+          type:
+            - string
+            - 'null'
+          maxLength: 160
+          description: |
+            Visitor company or organization.
+
+            Empty or whitespace-only values are normalized to null.
+
+        service:
+          type: string
+          enum:
+            - custom-software
+            - automation-integrations
+            - applied-ai
+            - api-backend
+            - modernization-maintenance
+            - technical-consulting
+            - other
+          description: Canonical service category.
+
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Visitor project, problem, or need description.
+
+        locale:
+          type: string
+          enum:
+            - pt-BR
+            - en
+          description: Locale of the visitor experience that originated the request.
+
+        businessWebsite:
+          type: string
+          maxLength: 2048
+          description: |
+            Auxiliary website field reserved by the public contact interface.
+
+        privacy:
+          $ref: '#/components/schemas/PrivacyMetadata'
+
+        analytics:
+          $ref: '#/components/schemas/AnalyticsMetadata'
+
+    PrivacyMetadata:
+      type: object
+      additionalProperties: false
+      required:
+        - accepted
+        - policyVersion
+      properties:
+        accepted:
+          type: boolean
+          const: true
+          description: |
+            Indicates explicit acceptance of data processing required to respond
+            to the contact request.
+
+        policyVersion:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: |
+            Platform-recognized privacy policy version presented to the visitor.
+
+    AnalyticsMetadata:
+      oneOf:
+        - $ref: '#/components/schemas/AnalyticsWithoutConsent'
+        - $ref: '#/components/schemas/AnalyticsWithConsent'
+
+    AnalyticsWithoutConsent:
+      type: object
+      additionalProperties: false
+      required:
+        - consent
+        - clientId
+        - sessionId
+      properties:
+        consent:
+          type: boolean
+          const: false
+
+        clientId:
+          type: 'null'
+
+        sessionId:
+          type: 'null'
+
+    AnalyticsWithConsent:
+      type: object
+      additionalProperties: false
+      required:
+        - consent
+        - clientId
+        - sessionId
+      properties:
+        consent:
+          type: boolean
+          const: true
+
+        clientId:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+          maxLength: 128
+          description: |
+            GA4 client identifier when available.
+
+            Null does not invalidate the contact request.
+
+        sessionId:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+          maxLength: 128
+          description: |
+            GA4 session identifier when available.
+
+            Null does not invalidate the contact request.
+
+    AcceptedResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - accepted
+      properties:
+        accepted:
+          type: boolean
+          const: true
+
+    ValidationErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          const: validation_error
+
+        fields:
+          type: object
+          description: |
+            Validation errors grouped by field when field-level errors are
+            available.
+          additionalProperties:
+            type: array
+            items:
+              type: string
+              minLength: 1
+
+    RateLimitErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          const: rate_limit_exceeded
+
+    InternalErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          const: internal_error
