@@ -46,7 +46,7 @@ Examples:
 
 ```text
 docs/repository-architecture-adr
-docs/contact-form-spec
+docs/contact-request-spec
 feature/contact-request-contract
 infra/terraform-bootstrap
 fix/openapi-validation

@@ -57,7 +57,7 @@ Example:
 
 ```text
 specs/
-└── contact-form/
+└── contact-request/
     ├── spec.md
     └── acceptance-criteria.md
 ```
